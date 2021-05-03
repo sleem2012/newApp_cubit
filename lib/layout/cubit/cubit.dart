@@ -6,6 +6,7 @@ import 'package:news_cubit/layout/cubit/states.dart';
 import 'package:news_cubit/modules/business_screen.dart';
 import 'package:news_cubit/modules/science_screen.dart';
 import 'package:news_cubit/modules/sports_screen.dart';
+import 'package:news_cubit/shared/network/local/cache_helper.dart';
 import 'package:news_cubit/shared/network/remote/dio_helper.dart';
 
 class NewsCubit extends Cubit<NewsStates> {
@@ -38,11 +39,12 @@ class NewsCubit extends Cubit<NewsStates> {
   ];
 
   void changeBottomNavBar(int index) {
-    if(index==1)
-      getSports();
 
-    if(index==2)
-      getScience();
+    if (index == 0) getBusiness();
+
+    if (index == 1) getSports();
+
+    if (index == 2) getScience();
     currentIndex = index;
     emit(NewsBottomNavState());
   }
@@ -50,7 +52,6 @@ class NewsCubit extends Cubit<NewsStates> {
   List<dynamic> business = [];
   List<dynamic> sports = [];
   List<dynamic> science = [];
-
 
   void getBusiness() {
     emit(NewsGetBusinessLoadingState());
@@ -61,8 +62,6 @@ class NewsCubit extends Cubit<NewsStates> {
         'category': 'business',
         'apiKey': '65f7f556ec76449fa7dc7c0069f040ca',
       },
-
-
     ).then((value) {
       business = value.data['articles'];
       emit(NewsGetBusinessSuccessState());
@@ -76,7 +75,7 @@ class NewsCubit extends Cubit<NewsStates> {
 
   void getSports() {
     emit(NewsGetSportsLoadingState());
-    if(sports.length==0){
+    if (sports.length == 0) {
       DioHelper.getData(
         url: 'v2/top-headlines',
         query: {
@@ -89,19 +88,19 @@ class NewsCubit extends Cubit<NewsStates> {
         print(sports[0]["title"]);
         emit(NewsGetSportsSuccessState());
       }).catchError(
-            (error) {
+        (error) {
           emit(NewsGetSportsErrorState(error.toString()));
           print(error.toString());
         },
       );
-    }else{
+    } else {
       emit(NewsGetSportsSuccessState());
     }
-
   }
+
   void getScience() {
     emit(NewsGetScienceLoadingState());
-    if(science.length==0){
+    if (science.length == 0) {
       DioHelper.getData(
         url: 'v2/top-headlines',
         query: {
@@ -114,16 +113,57 @@ class NewsCubit extends Cubit<NewsStates> {
         print(science[0]["title"]);
         emit(NewsGetScienceSuccessState());
       }).catchError(
-            (error) {
+        (error) {
           emit(NewsGetScienceErrorState(error.toString()));
           print(error.toString());
         },
       );
-    }else{
+    } else {
       emit(NewsGetScienceSuccessState());
+    }
+  }
 
+
+
+  bool isDark = false;
+
+  void changeAppMode({bool fromShared}) {
+    if (fromShared != null) {
+      isDark = fromShared;
+
+      emit(NewsChangeModeState());
+    } else {
+      isDark = !isDark;
+      CacheHelper.putBoolean(key: 'isDark', value: isDark).then((value) {
+        emit(NewsChangeModeState());
+      });
+      emit(NewsChangeModeState());
     }
-    }
+  }
+List<dynamic>search=[];
+  void getSearch(String value) {
+    emit(NewsGetSearchLoadingState());
+    search=[];
+
+
+    DioHelper.getData(
+      url: 'v2/everything',
+      query: {
+        'q': '$value',
+        'apiKey': '65f7f556ec76449fa7dc7c0069f040ca',
+      },
+    ).then((value) {
+      search = value.data['articles'];
+      print(search[0]["title"]);
+      emit(NewsGetSearchSuccessState());
+    }).catchError(
+          (error) {
+        emit(NewsGetSearchErrorState(error.toString()));
+        print(error.toString());
+      },
+    );
+  }
+
 
 
 }
